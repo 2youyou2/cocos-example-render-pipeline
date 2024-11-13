@@ -11,7 +11,7 @@
     "MAX_LABEL_CANVAS_POOL_SIZE": 20,
     "ENABLE_WEBGL_HIGHP_STRUCT_VALUES": false,
     "BATCHER2D_MEM_INCREMENT": 144,
-    "CUSTOM_PIPELINE_NAME": "BuiltinDev"
+    "CUSTOM_PIPELINE_NAME": "Pipeline001"
   },
   "modules": {
     "cache": {

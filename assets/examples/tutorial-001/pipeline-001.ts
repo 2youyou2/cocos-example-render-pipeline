@@ -1,12 +1,19 @@
 import {
     _decorator,
     Component,
+    director,
+    game,
     gfx,
+    Material,
     renderer,
     rendering,
+    RenderTexture,
+    Slider,
 } from 'cc';
 import { getWindowInfo, needClearColor, WindowInfo } from '../pipeline-data';
-const { ccclass } = _decorator;
+import { addOrUpdateStorageTexture, addOrUpdateUniformBuffer } from '../tutorial-005-compute/raytracingByCompute';
+import { JSB } from 'cc/env';
+const { ccclass, property } = _decorator;
 
 // implement a custom pipeline
 // 如何实现一个自定义渲染管线
@@ -29,6 +36,8 @@ class HelloWorldPipeline implements rendering.PipelineBuilder {
             // 为编辑器以及游戏视图构建前向光照管线
             this.buildForward(ppl, camera, info.id, info.width, info.height);
         }
+
+        this.buildFinal(ppl);
     }
     // internal methods
     // 管线内部方法
@@ -127,18 +136,53 @@ class HelloWorldPipeline implements rendering.PipelineBuilder {
         // add opaque and mask queue
         // 添加不透明和遮罩队列
         pass.addQueue(rendering.QueueHint.NONE)
-            .addSceneOfCamera(
+            .addScene(
                 camera,
-                new rendering.LightInfo(),
                 rendering.SceneFlags.OPAQUE | rendering.SceneFlags.MASK);
         // add transparent queue
         // 添加透明队列
         pass.addQueue(rendering.QueueHint.BLEND)
-            .addSceneOfCamera(
+            .addScene(
                 camera,
-                new rendering.LightInfo(),
-                rendering.SceneFlags.BLEND);
+                rendering.SceneFlags.BLEND | rendering.SceneFlags.UI);
     }
+
+    private _buffer: gfx.Buffer | null = null;
+
+    private buildFinal (ppl: rendering.BasicPipeline) {
+        if (!pipeline_001.instance || !JSB) {
+            return;
+        }
+
+        const { width, height } = game.canvas;
+
+        const finalTarget = `Color_final`;
+
+        ppl.addRenderWindow(finalTarget, gfx.Format.BGRA8, width, height, pipeline_001.instance.rt_result.window);
+
+        const pipeline = ppl as rendering.Pipeline;
+        addOrUpdateStorageTexture("storage", gfx.Format.RGBA8, width, height, rendering.ResourceResidency.MANAGED, pipeline);
+
+
+        // compute
+        const computePass = pipeline.addComputePass("rt1w");
+        computePass.addStorageImage("storage", rendering.AccessType.WRITE, "Result");
+
+        let mat = pipeline_001.instance.combineRtMaterial;
+        mat.setProperty('TexA', pipeline_001.instance.rt_01);
+        mat.setProperty('TexB', pipeline_001.instance.rt_02);
+        mat.setProperty('blend', pipeline_001.instance.blend);
+
+        computePass.addQueue().addDispatch(width / 24, height / 24, 1, mat);
+
+        // sample storage texture to swapchain
+        const pass = pipeline.addRenderPass(width, height, "swizzle");
+        pass.addRenderTarget(finalTarget, gfx.LoadOp.DISCARD, gfx.StoreOp.STORE)
+        pass.addTexture("storage", "mainTexture");
+        pass.addQueue(rendering.QueueHint.OPAQUE, "swizzle-phase")
+            .addFullscreenQuad(pipeline_001.instance.swizzleMaterial, 0);
+    }
+
     // internal cached resources
     // 管线内部缓存资源
     readonly _clearColor = new gfx.Color(0, 0, 0, 1);
@@ -153,12 +197,53 @@ if (rendering) {
 
 @ccclass('pipeline_001')
 export class pipeline_001 extends Component {
+    static instance: pipeline_001
+
+    @property(RenderTexture)
+    rt_01: RenderTexture
+
+    @property(RenderTexture)
+    rt_02: RenderTexture
+
+    @property(RenderTexture)
+    rt_result: RenderTexture
+
+    @property(Material)
+    rt1wMaterial: Material
+
+    @property(Material)
+    swizzleMaterial: Material
+
+    @property(Material)
+    combineRtMaterial: Material
+
+    blend = 0.5
+
+    protected onEnable(): void {
+        pipeline_001.instance = this
+    }
+
+    protected onDisable(): void {
+        pipeline_001.instance = undefined
+    }
+
     start() {
-        // noop
-        // 空操作
+        if (this.rt_01) {
+            this.rt_01.resize(game.canvas.width, game.canvas.height);
+        }
+        if (this.rt_02) {
+            this.rt_02.resize(game.canvas.width, game.canvas.height);
+        }
+        if (this.rt_result) {
+            this.rt_result.resize(game.canvas.width, game.canvas.height);
+        }
     }
     update(deltaTime: number) {
         // noop
         // 空操作
+    }
+
+    onChangeBlend(target: Slider) {
+        this.blend = target.progress
     }
 }

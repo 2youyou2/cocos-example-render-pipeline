@@ -37,11 +37,11 @@ CCProgram swizzle-pass-fs %{
   layout(location = 0) out vec4 fragColor;
 
 void main () {
-    #if defined(CC_USE_METAL) || defined(CC_USE_WGPU)
-    vec2 uv = vec2(v_uv.x, 1.0 - v_uv.y);
-    #else
-    vec2 uv = v_uv;
-    #endif
+    // #if defined(CC_USE_METAL) || defined(CC_USE_WGPU)
+      // vec2 uv = vec2(v_uv.x, 1.0 - v_uv.y);
+    // #else
+      vec2 uv = v_uv;
+    // #endif
     fragColor = texture(mainTexture, uv);
   }
 }%

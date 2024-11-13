@@ -21,7 +21,7 @@ function addOrUpdateRenderTarget(name: string, format: gfx.Format, width: number
     }
 }
 
-function addOrUpdateStorageTexture(name: string, format: gfx.Format, width: number, height: number, residency: rendering.ResourceResidency, pipeline: rendering.Pipeline) {
+export function addOrUpdateStorageTexture(name: string, format: gfx.Format, width: number, height: number, residency: rendering.ResourceResidency, pipeline: rendering.Pipeline) {
     if (!pipeline.containsResource(name)) {
         pipeline.addStorageTexture(name, format, width, height, residency);
     } else {
@@ -37,7 +37,7 @@ function addOrUpdateStorageBuffer(name: string, format: gfx.Format, size: number
     }
 }
 
-function addOrUpdateUniformBuffer(name: string, flags: rendering.ResourceFlags, size: number, residency: rendering.ResourceResidency, pipeline: rendering.Pipeline) {
+export function addOrUpdateUniformBuffer(name: string, flags: rendering.ResourceFlags, size: number, residency: rendering.ResourceResidency, pipeline: rendering.Pipeline) {
     if (!pipeline.containsResource(name)) {
         pipeline.addBuffer(name, size, flags, residency);
     } else {

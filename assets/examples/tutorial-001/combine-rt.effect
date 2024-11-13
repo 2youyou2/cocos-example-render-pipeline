@@ -1,0 +1,50 @@
+CCEffect %{ 
+  techniques:  
+  - name: opaque  
+    passes:  
+    - pass: rt1w  
+      compute: rt-comp  
+}%  
+  
+CCProgram rt-comp %{  
+  
+  
+  layout(local_size_x = 24, local_size_y = 24, local_size_z = 1) in;
+  
+  #pragma rate Result pass
+  layout (rgba8) writeonly uniform highp image2D Result;
+  
+  uniform  sampler2D TexA;  
+  uniform  sampler2D TexB;  
+
+  uniform SharedUBO {
+    float blend;
+  };
+  
+float xData;
+float yData;
+float t;
+int num;
+int area_num;
+
+vec4  tempColor; 
+vec4  texA;
+vec4  texB;
+
+  void main() {  
+    ivec2 id = ivec2(gl_GlobalInvocationID.xy);  
+    texA = texelFetch(TexA, id, 0);  
+    texB = texelFetch(TexB, id, 0);  
+
+    // texA = texture(texA, );
+    
+    tempColor = mix(texA, texB, blend);
+
+    // vec2 size = imageSize(TexA);
+
+    // tempColor = vec4(id / size, 0., 1.);
+    
+    imageStore(Result, id, tempColor);
+    
+  }  
+}%
